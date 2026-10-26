@@ -8,13 +8,49 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-pea-primary: #74045f;
+  --color-pea-primary-dark: #4a023d;
+  --color-pea-accent: #f6a800;
+  --font-sans: var(--font-plex-thai);
   --font-mono: var(--font-geist-mono);
+
+  --animate-kenburns: kenburns 8s ease-out forwards;
+  --animate-fade-up: fade-up 0.7s ease-out both;
+  --animate-progress: progress linear forwards;
+
+  @keyframes kenburns {
+    from {
+      transform: scale(1.12);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes progress {
+    from {
+      width: 0%;
+    }
+    to {
+      width: 100%;
+    }
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #09090b;
     --foreground: #ededed;
   }
 }
@@ -22,5 +58,4 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

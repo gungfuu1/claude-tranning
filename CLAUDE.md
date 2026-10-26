@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Next.js version warning
 
-This project runs **Next.js 16.4.3 / React 19.3**, which has breaking changes relative to older Next.js versions. Before writing Next.js code, read the relevant guide in `node_modules/next/dist/docs/` (`01-app/` for App Router guides and API reference, `04-glossary.md` for terms) and heed deprecation notices rather than relying on prior knowledge.
+This project runs **Next.js 16.4.3 / React 19.3**, which has breaking changes relative to older Next.js versions. Before writing Next.js code, read the relevant guide in `node_modules/next/dist/docs/` (`01-app/` for App Router guides and API reference, `01-app/04-glossary.md` for terms) and heed deprecation notices rather than relying on prior knowledge.
 
 ## Commands
 
@@ -14,6 +14,7 @@ This project runs **Next.js 16.4.3 / React 19.3**, which has breaking changes re
 - `npm run build` — production build
 - `npm run start` — serve the production build
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
+- `npx next typegen && npx tsc --noEmit` — type-check without a full build (`typegen` generates the global route type helpers such as `LayoutProps`/`PageProps` into `.next/`; `dev` and `build` also generate them)
 
 No test runner is configured yet.
 
@@ -27,4 +28,6 @@ Key configuration in `next.config.ts` that shapes how code must be written:
 - **`partialPrefetching: true`** — `<Link>` prefetches only the route's App Shell; `<Link prefetch={true}>` opts into per-link prefetching of URL-dependent cached content. Dev overlay surfaces instant-navigation insights; a route can opt out with `export const instant = false`. See `01-app/02-guides/adopting-partial-prefetching.md`.
 - **Tailwind CSS v4** is wired through a Turbopack loader rule (`@tailwindcss/turbopack` on `*.css`), not PostCSS. Theme tokens are declared in `src/app/globals.css` via `@import "tailwindcss"` and `@theme inline` (CSS variables `--background`/`--foreground`, dark mode via `prefers-color-scheme`).
 
-The root layout (`src/app/layout.tsx`) uses the globally typed `LayoutProps<"/">` helper for props and loads Geist fonts via `next/font/google`.
+The root layout (`src/app/layout.tsx`) uses the globally typed `LayoutProps<"/">` helper for props, loads IBM Plex Sans Thai (mapped to `--font-sans`) and Geist Mono via `next/font/google`, and wraps every page in `SiteHeader`/`SiteFooter`. UI text is Thai (`lang="th"`); PEA brand colors are theme tokens in `globals.css` (`pea-primary`, `pea-primary-dark`, `pea-accent`).
+
+Data currently comes from fake in-memory fixtures in `src/lib/` (`courses.ts`, `hero-slides.ts`) behind async `'use cache'` functions — swap the function bodies for real DB/API calls without touching components. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.
