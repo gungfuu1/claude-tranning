@@ -19,7 +19,7 @@ export function Logo() {
       </span>
       <span className="leading-tight">
         <span className="block text-lg font-bold text-pea-primary dark:text-white">
-          PEA Academy
+          PEA HUB
         </span>
         <span className="block text-xs text-zinc-500 dark:text-zinc-400">
           ศูนย์ฝึกอบรม การไฟฟ้าส่วนภูมิภาค

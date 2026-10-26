@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PEA Academy | หลักสูตรอบรม การไฟฟ้าส่วนภูมิภาค",
+  title: "PEA HUB | หลักสูตรอบรม การไฟฟ้าส่วนภูมิภาค",
   description: "หลักสูตรอบรมด้านระบบไฟฟ้า ความปลอดภัย พลังงานทดแทน และดิจิทัล จากการไฟฟ้าส่วนภูมิภาค",
 };
 
