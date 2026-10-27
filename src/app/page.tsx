@@ -1,35 +1,37 @@
+import { Suspense } from "react";
+import { CourseCategories } from "@/components/course-categories";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { LatestCourses } from "@/components/latest-courses";
+import { SectionError } from "@/components/section-error";
 import { StatsSection } from "@/components/stats-section";
-import { getCategories } from "@/lib/courses";
 import { heroSlides } from "@/lib/hero-slides";
 
-export default async function Home() {
-  const categories = await getCategories();
-
+export default function Home() {
   return (
     <main className="flex-1">
       <HeroCarousel slides={heroSlides} />
 
-      <StatsSection />
+      {/* Each data section (Supabase) gets its own boundary so one failed query can't take down the page. */}
+      <SectionError title="สถิติ">
+        <Suspense fallback={<div className="relative z-10 mx-auto -mt-12 h-[118px] max-w-6xl px-4" />}>
+          <StatsSection />
+        </Suspense>
+      </SectionError>
 
-      <LatestCourses />
+      <SectionError title="หลักสูตรล่าสุด">
+        <Suspense fallback={<div className="mx-auto h-96 max-w-6xl px-4 py-16" />}>
+          <LatestCourses />
+        </Suspense>
+      </SectionError>
 
       <section id="categories" className="scroll-mt-20 bg-zinc-50 py-16 dark:bg-zinc-900/40">
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="text-2xl font-bold text-zinc-900 sm:text-3xl dark:text-white">หมวดหมู่หลักสูตร</h2>
-          <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {categories.map((cat) => (
-              <a
-                key={cat.name}
-                href="#"
-                className="rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-pea-primary hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-pea-accent"
-              >
-                <p className="font-semibold text-zinc-900 dark:text-white">{cat.name}</p>
-                <p className="mt-1 text-sm text-zinc-500">{cat.count} หลักสูตร</p>
-              </a>
-            ))}
-          </div>
+          <SectionError title="หมวดหมู่หลักสูตร" nested>
+            <Suspense fallback={<div className="mt-8 h-24" />}>
+              <CourseCategories />
+            </Suspense>
+          </SectionError>
         </div>
       </section>
 
