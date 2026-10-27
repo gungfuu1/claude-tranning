@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Tests that create accounts read SUPABASE_SECRET_KEY from here (e2e/auth.spec.ts).
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // No .env.local: those tests skip themselves.
+}
+
 // Runs against a production build (needs .env.local: the homepage prerenders Supabase data).
 export default defineConfig({
   testDir: "e2e",

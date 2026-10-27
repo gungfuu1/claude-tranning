@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { UserMenu } from "./auth/user-menu";
 import { MobileMenu } from "./mobile-menu";
 import { NavLinks, type NavItem } from "./nav-links";
 
@@ -39,22 +41,18 @@ export function SiteHeader() {
 
         <NavLinks items={navItems} />
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Link
-            href="#"
-            className="rounded-lg px-4 py-2 text-sm font-medium text-pea-primary hover:bg-pea-primary/5 dark:text-white"
-          >
-            เข้าสู่ระบบ
-          </Link>
-          <Link
-            href="#"
-            className="rounded-lg bg-pea-primary px-4 py-2 text-sm font-semibold text-white hover:bg-pea-primary-dark"
-          >
-            สมัครเรียน
-          </Link>
+        {/* The auth area reads the session cookie, so it streams in; the rest of the header stays static. */}
+        <div className="hidden md:block">
+          <Suspense fallback={<div className="h-10 w-48" />}>
+            <UserMenu variant="desktop" />
+          </Suspense>
         </div>
 
-        <MobileMenu items={navItems} />
+        <MobileMenu items={navItems}>
+          <Suspense fallback={null}>
+            <UserMenu variant="mobile" />
+          </Suspense>
+        </MobileMenu>
       </div>
     </header>
   );

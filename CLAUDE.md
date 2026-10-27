@@ -17,7 +17,7 @@ This project runs **Next.js 16.4.3 / React 19.3**, which has breaking changes re
 - `npx next typegen && npx tsc --noEmit` — type-check without a full build (`typegen` generates the global route type helpers such as `LayoutProps`/`PageProps` into `.next/`; `dev` and `build` also generate them)
 
 - `npm test` — Vitest unit tests (`src/**/*.test.ts`); `npx vitest run src/lib/about.test.ts` for one file
-- `npm run test:e2e` — Playwright (Chromium) + axe in `e2e/`; builds and starts the app itself, so it needs `.env.local` (homepage prerenders Supabase data). First run: `npx playwright install chromium`
+- `npm run test:e2e` — Playwright (Chromium) + axe in `e2e/`; builds and starts the app itself (or reuses a server already on :3000), so it needs `.env.local` (homepage prerenders Supabase data). The account tests in `e2e/auth.spec.ts` skip unless `SUPABASE_SECRET_KEY` is set, and delete the `e2e-auth-*` users they create. First run: `npx playwright install chromium`
 
 ## Architecture
 
@@ -33,11 +33,16 @@ The root layout (`src/app/layout.tsx`) uses the globally typed `LayoutProps<"/">
 
 ### Data (Supabase)
 
-Course data lives in Supabase (`.env.local` holds `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Schema is in `supabase/migrations/` (table `courses` plus views `course_stats` and `course_categories`, RLS read-only for `anon`) and sample rows in `supabase/seed.sql`; there is no Supabase CLI setup, so schema changes are applied by running the SQL in the dashboard SQL editor.
+Course data lives in Supabase (`.env.local` holds `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, plus the server-only `SUPABASE_SECRET_KEY` for sign-up/login). Schema is in `supabase/migrations/` (table `courses` plus views `course_stats` and `course_categories`, RLS read-only for `anon`; `profiles` and `login_throttle` for members) and sample rows in `supabase/seed.sql`; there is no Supabase CLI setup, so schema changes are applied by running the SQL in the dashboard SQL editor.
 
-Three Supabase clients in `src/lib/supabase/`, chosen by what the code depends on:
+Four Supabase clients in `src/lib/supabase/`, chosen by what the code depends on:
 - `public.ts` — cookie-less; the only one usable inside `'use cache'` functions. `src/lib/courses.ts` uses it, with `cacheLife("minutes")` and `cacheTag(COURSES_TAG)` (call `revalidateTag` with it after writes).
 - `server.ts` — reads `cookies()` for per-user data; callers must be uncached and inside `<Suspense>`.
 - `client.ts` — browser client for Client Components.
+- `admin.ts` — secret key, bypasses RLS and manages auth users; `server-only`, used just by `src/lib/auth/supabase-gateway.ts`.
 
-`middleware.ts` (`updateSession`) is not wired into a `src/proxy.ts` yet — it redirects every signed-out request to `/auth/login`, so public routes must be allowed first. Supabase query errors are thrown, so a missing table fails `next build` during prerender. Hero slides (`src/lib/hero-slides.ts`) are still static in code. The `/about` page (spec `docs/002-about-page.spec.md`) is deliberately database-free: content is in `src/content/about.ts`, validated by the zod `aboutContentSchema` in `src/lib/about.ts` through `npm test`. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.
+`src/proxy.ts` calls `updateSession` (`src/lib/supabase/middleware.ts`) on every page request: it refreshes the session cookie, sends signed-out visitors from `PROTECTED_PREFIXES` (`/my-courses`, `/admin`) to `/login?next=…`, and sends signed-in visitors away from `/login` and `/register`; every other route is public.
+
+Sign-up and login (spec `docs/003-member-registration-login.spec.md`) keep their rules in pure modules under `src/lib/auth/` (`validation.ts`, `safe-next.ts` for `?next=`, `throttle.ts` for the 5-failure lockout, `service.ts` for the use cases). `service.ts` talks to storage only through the `AuthGateway` interface: unit tests pass an in-memory fake, and `supabase-gateway.ts` is the real one. The Server Actions in `actions.ts` re-validate everything; the forms use `noValidate` so every error shows the server's Thai message. The header's `UserMenu` reads the session cookie, so it sits in `<Suspense>`.
+
+Supabase query errors are thrown, so a missing table fails `next build` during prerender. Hero slides (`src/lib/hero-slides.ts`) are still static in code. The `/about` page (spec `docs/002-about-page.spec.md`) is deliberately database-free: content is in `src/content/about.ts`, validated by the zod `aboutContentSchema` in `src/lib/about.ts` through `npm test`. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.

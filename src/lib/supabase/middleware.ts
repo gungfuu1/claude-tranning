@@ -1,9 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeNext } from "@/lib/auth/safe-next";
 
-// Session refresh for a root `src/proxy.ts` (Next.js 16's name for middleware). Not wired up yet:
-// as written it redirects every signed-out visitor to /auth/login, which doesn't exist, so add the
-// login pages (and allow public routes like "/") before calling this from a proxy.
+// Pages only signed-out visitors need; a signed-in visitor is sent on to `?next=` (spec 003, AS-14).
+const AUTH_PAGES = ["/login", "/register"];
+// Pages that need a signed-in member; everything else (home, /about, courses) stays public.
+const PROTECTED_PREFIXES = ["/my-courses", "/admin"];
+
+const matchesPrefix = (pathname: string, prefix: string) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+// Session refresh, called from src/proxy.ts on every page request.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -41,18 +48,16 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    // the OAuth consent route sends unauthenticated visitors to the login page
-    // itself, so that it can preserve the authorization in the `next` parameter
-    request.nextUrl.pathname !== "/oauth/consent"
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
+  const { pathname, search, searchParams } = request.nextUrl;
+
+  if (user && AUTH_PAGES.includes(pathname)) {
+    return redirectKeepingCookies(new URL(safeNext(searchParams.get("next")), request.url), supabaseResponse);
+  }
+
+  if (!user && PROTECTED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))) {
+    const url = new URL("/login", request.url);
+    url.searchParams.set("next", `${pathname}${search}`);
+    return redirectKeepingCookies(url, supabaseResponse);
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
@@ -69,4 +74,11 @@ export async function updateSession(request: NextRequest) {
   // of sync and terminate the user's session prematurely!
 
   return supabaseResponse;
+}
+
+// A redirect must carry the refreshed session cookies, or the browser and server fall out of sync.
+function redirectKeepingCookies(url: URL, supabaseResponse: NextResponse) {
+  const response = NextResponse.redirect(url);
+  supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  return response;
 }

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import type { NavItem } from "./nav-links";
 
-export function MobileMenu({ items }: { items: NavItem[] }) {
+// `children` is the auth area (UserMenu), rendered under the links.
+export function MobileMenu({ items, children }: { items: NavItem[]; children: ReactNode }) {
   const pathname = usePathname();
   const ref = useRef<HTMLDetailsElement>(null);
   const close = () => ref.current?.removeAttribute("open");
@@ -31,13 +32,8 @@ export function MobileMenu({ items }: { items: NavItem[] }) {
             {item.label}
           </Link>
         ))}
-        <Link
-          href="#"
-          onClick={close}
-          className="mt-2 block rounded-lg bg-pea-primary px-3 py-2 text-center text-sm font-semibold text-white"
-        >
-          สมัครเรียน
-        </Link>
+        {/* Close the menu after a link or the logout button inside the auth area is used. */}
+        <div onClick={close}>{children}</div>
       </nav>
     </details>
   );
