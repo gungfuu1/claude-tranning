@@ -30,4 +30,13 @@ Key configuration in `next.config.ts` that shapes how code must be written:
 
 The root layout (`src/app/layout.tsx`) uses the globally typed `LayoutProps<"/">` helper for props, loads IBM Plex Sans Thai (mapped to `--font-sans`) and Geist Mono via `next/font/google`, and wraps every page in `SiteHeader`/`SiteFooter`. UI text is Thai (`lang="th"`); PEA brand colors are theme tokens in `globals.css` (`pea-primary`, `pea-primary-dark`, `pea-accent`).
 
-Data currently comes from fake in-memory fixtures in `src/lib/` (`courses.ts`, `hero-slides.ts`) behind async `'use cache'` functions — swap the function bodies for real DB/API calls without touching components. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.
+### Data (Supabase)
+
+Course data lives in Supabase (`.env.local` holds `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Schema is in `supabase/migrations/` (table `courses` plus views `course_stats` and `course_categories`, RLS read-only for `anon`) and sample rows in `supabase/seed.sql`; there is no Supabase CLI setup, so schema changes are applied by running the SQL in the dashboard SQL editor.
+
+Three Supabase clients in `src/lib/supabase/`, chosen by what the code depends on:
+- `public.ts` — cookie-less; the only one usable inside `'use cache'` functions. `src/lib/courses.ts` uses it, with `cacheLife("minutes")` and `cacheTag(COURSES_TAG)` (call `revalidateTag` with it after writes).
+- `server.ts` — reads `cookies()` for per-user data; callers must be uncached and inside `<Suspense>`.
+- `client.ts` — browser client for Client Components.
+
+`middleware.ts` (`updateSession`) is not wired into a `src/proxy.ts` yet — it redirects every signed-out request to `/auth/login`, so public routes must be allowed first. Supabase query errors are thrown, so a missing table fails `next build` during prerender. Hero slides (`src/lib/hero-slides.ts`) are still static in code. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.

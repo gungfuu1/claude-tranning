@@ -1,10 +1,11 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export type CourseMode = "ออนไลน์" | "ในห้องเรียน" | "ผสมผสาน";
 export type CourseLevel = "พื้นฐาน" | "กลาง" | "ขั้นสูง";
 
 export type Course = {
-  id: string;
+  id: string; // the course code (courses.code), e.g. "c-101"
   title: string;
   category: string;
   instructor: string;
@@ -25,137 +26,29 @@ export type Stats = {
   instructors: number;
 };
 
-// Fake data — replace the bodies of the functions below with real DB/API calls.
-const courses: Course[] = [
-  {
-    id: "c-101",
-    title: "ความปลอดภัยในการปฏิบัติงานระบบไฟฟ้าแรงสูง",
-    category: "ความปลอดภัย",
-    instructor: "วศ. สมชาย ใจดี",
-    durationHours: 24,
-    level: "กลาง",
-    mode: "ในห้องเรียน",
-    startDate: "2026-11-16",
-    publishedAt: "2026-10-20",
-    enrolled: 42,
-    capacity: 50,
-    rating: 4.8,
-  },
-  {
-    id: "c-102",
-    title: "ระบบโครงข่ายไฟฟ้าอัจฉริยะ (Smart Grid) เบื้องต้น",
-    category: "เทคโนโลยีระบบไฟฟ้า",
-    instructor: "ดร. วิภาวดี ศรีสุข",
-    durationHours: 12,
-    level: "พื้นฐาน",
-    mode: "ออนไลน์",
-    startDate: "2026-11-09",
-    publishedAt: "2026-10-01",
-    enrolled: 318,
-    capacity: 400,
-    rating: 4.7,
-  },
-  {
-    id: "c-103",
-    title: "การบำรุงรักษาหม้อแปลงไฟฟ้าระบบจำหน่าย",
-    category: "งานบำรุงรักษา",
-    instructor: "นาย ประเสริฐ มั่นคง",
-    durationHours: 18,
-    level: "กลาง",
-    mode: "ผสมผสาน",
-    startDate: "2026-11-02",
-    publishedAt: "2026-09-15",
-    enrolled: 64,
-    capacity: 80,
-    rating: 4.6,
-  },
-  {
-    id: "c-104",
-    title: "การติดตั้งและตรวจสอบระบบ Solar Rooftop",
-    category: "พลังงานทดแทน",
-    instructor: "วศ. ธนพล รุ่งเรือง",
-    durationHours: 16,
-    level: "กลาง",
-    mode: "ผสมผสาน",
-    startDate: "2026-11-23",
-    publishedAt: "2026-10-22",
-    enrolled: 55,
-    capacity: 60,
-    rating: 4.9,
-  },
-  {
-    id: "c-105",
-    title: "Digital Transformation สำหรับบุคลากร กฟภ.",
-    category: "ดิจิทัล",
-    instructor: "ดร. กมลชนก วงศ์ไทย",
-    durationHours: 8,
-    level: "พื้นฐาน",
-    mode: "ออนไลน์",
-    startDate: "2026-10-26",
-    publishedAt: "2026-09-01",
-    enrolled: 1240,
-    capacity: 1500,
-    rating: 4.5,
-  },
-  {
-    id: "c-106",
-    title: "การบริการลูกค้าอย่างมืออาชีพ (Service Excellence)",
-    category: "การบริการ",
-    instructor: "คุณ อรอุมา แสงทอง",
-    durationHours: 6,
-    level: "พื้นฐาน",
-    mode: "ออนไลน์",
-    startDate: "2026-10-19",
-    publishedAt: "2026-08-20",
-    enrolled: 876,
-    capacity: 1000,
-    rating: 4.6,
-  },
-  {
-    id: "c-107",
-    title: "การวิเคราะห์ข้อมูลมิเตอร์อัจฉริยะ (AMI Data Analytics)",
-    category: "ดิจิทัล",
-    instructor: "นาย ณัฐวุฒิ ปัญญาดี",
-    durationHours: 20,
-    level: "ขั้นสูง",
-    mode: "ออนไลน์",
-    startDate: "2026-12-01",
-    publishedAt: "2026-10-24",
-    enrolled: 97,
-    capacity: 150,
-    rating: 4.8,
-  },
-  {
-    id: "c-108",
-    title: "ระบบป้องกันและรีเลย์ในสถานีไฟฟ้า",
-    category: "เทคโนโลยีระบบไฟฟ้า",
-    instructor: "วศ. ชัยวัฒน์ พลังดี",
-    durationHours: 30,
-    level: "ขั้นสูง",
-    mode: "ในห้องเรียน",
-    startDate: "2026-10-12",
-    publishedAt: "2026-08-01",
-    enrolled: 28,
-    capacity: 30,
-    rating: 4.9,
-  },
-  {
-    id: "c-109",
-    title: "ภาวะผู้นำสำหรับหัวหน้างานยุคใหม่",
-    category: "การบริหาร",
-    instructor: "ผศ. ดร. สุนิสา ตั้งใจ",
-    durationHours: 12,
-    level: "กลาง",
-    mode: "ผสมผสาน",
-    startDate: "2026-10-05",
-    publishedAt: "2026-07-15",
-    enrolled: 120,
-    capacity: 120,
-    rating: 4.7,
-  },
-];
-
 export type LatestCourse = Course & { isNew: boolean };
+
+// Row shape of public.courses (see supabase/migrations).
+type CourseRow = {
+  code: string;
+  title: string;
+  category: string;
+  instructor: string;
+  duration_hours: number;
+  level: CourseLevel;
+  mode: CourseMode;
+  start_date: string;
+  published_at: string;
+  enrolled: number;
+  capacity: number;
+  rating: number;
+};
+
+const COURSE_COLUMNS =
+  "code, title, category, instructor, duration_hours, level, mode, start_date, published_at, enrolled, capacity, rating";
+
+// Every cached read below carries this tag, so a future admin action can call revalidateTag(COURSES_TAG).
+export const COURSES_TAG = "courses";
 
 const NEW_WITHIN_DAYS = 14;
 
@@ -166,33 +59,68 @@ const todayInBangkok = () =>
 const daysBetween = (from: string, to: string) =>
   (Date.parse(to) - Date.parse(from)) / 86_400_000;
 
+const toCourse = (row: CourseRow): Course => ({
+  id: row.code,
+  title: row.title,
+  category: row.category,
+  instructor: row.instructor,
+  durationHours: row.duration_hours,
+  level: row.level,
+  mode: row.mode,
+  startDate: row.start_date,
+  publishedAt: row.published_at,
+  enrolled: row.enrolled,
+  capacity: row.capacity,
+  rating: Number(row.rating),
+});
+
 // Upcoming courses (not yet started), soonest first.
 export async function getLatestCourses(limit = 6): Promise<LatestCourse[]> {
   "use cache";
-  cacheLife("hours");
+  cacheLife("minutes");
+  cacheTag(COURSES_TAG);
   const today = todayInBangkok();
-  return courses
-    .filter((c) => c.startDate >= today)
-    .sort((a, b) => a.startDate.localeCompare(b.startDate))
-    .slice(0, limit)
-    .map((c) => ({ ...c, isNew: daysBetween(c.publishedAt, today) <= NEW_WITHIN_DAYS }));
+  const { data, error } = await createPublicClient()
+    .from("courses")
+    .select(COURSE_COLUMNS)
+    .gte("start_date", today)
+    .order("start_date")
+    .limit(limit)
+    .overrideTypes<CourseRow[], { merge: false }>();
+  if (error) throw new Error(`Failed to load courses: ${error.message}`);
+  return data.map((row) => {
+    const course = toCourse(row);
+    return { ...course, isNew: daysBetween(course.publishedAt, today) <= NEW_WITHIN_DAYS };
+  });
 }
 
 export async function getStats(): Promise<Stats> {
   "use cache";
-  cacheLife("hours");
+  cacheLife("minutes");
+  cacheTag(COURSES_TAG);
+  const { data, error } = await createPublicClient()
+    .from("course_stats")
+    .select("total_learners, total_courses, graduates, instructors")
+    .single<{ total_learners: number; total_courses: number; graduates: number; instructors: number }>();
+  if (error) throw new Error(`Failed to load course stats: ${error.message}`);
   return {
-    totalLearners: 12480 + courses.reduce((sum, c) => sum + c.enrolled, 0),
-    totalCourses: 156,
-    graduates: 9873,
-    instructors: 84,
+    totalLearners: data.total_learners,
+    totalCourses: data.total_courses,
+    graduates: data.graduates,
+    instructors: data.instructors,
   };
 }
 
 export async function getCategories(): Promise<{ name: string; count: number }[]> {
   "use cache";
-  cacheLife("hours");
-  const counts = new Map<string, number>();
-  for (const c of courses) counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
-  return [...counts].map(([name, count]) => ({ name, count }));
+  cacheLife("minutes");
+  cacheTag(COURSES_TAG);
+  const { data, error } = await createPublicClient()
+    .from("course_categories")
+    .select("name, count")
+    .order("count", { ascending: false })
+    .order("name")
+    .overrideTypes<{ name: string; count: number }[], { merge: false }>();
+  if (error) throw new Error(`Failed to load course categories: ${error.message}`);
+  return data;
 }
