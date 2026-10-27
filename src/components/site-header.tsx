@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { MobileMenu } from "./mobile-menu";
+import { NavLinks, type NavItem } from "./nav-links";
 
-const navItems = [
+// Homepage sections are linked as "/#…" so they also work from other pages.
+const navItems: NavItem[] = [
   { label: "หน้าแรก", href: "/" },
-  { label: "หลักสูตร", href: "#courses" },
-  { label: "หมวดหมู่", href: "#categories" },
-  { label: "เกี่ยวกับเรา", href: "#about" },
-  { label: "ติดต่อ", href: "#contact" },
+  { label: "หลักสูตร", href: "/#courses" },
+  { label: "หมวดหมู่", href: "/#categories" },
+  { label: "เกี่ยวกับเรา", href: "/about" },
+  { label: "ติดต่อ", href: "/#contact" },
 ];
 
 export function Logo() {
@@ -35,17 +37,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Logo />
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-pea-primary/5 hover:text-pea-primary dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-white"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <NavLinks items={navItems} />
 
         <div className="hidden items-center gap-2 md:flex">
           <Link

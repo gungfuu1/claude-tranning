@@ -16,7 +16,8 @@ This project runs **Next.js 16.4.3 / React 19.3**, which has breaking changes re
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
 - `npx next typegen && npx tsc --noEmit` — type-check without a full build (`typegen` generates the global route type helpers such as `LayoutProps`/`PageProps` into `.next/`; `dev` and `build` also generate them)
 
-No test runner is configured yet.
+- `npm test` — Vitest unit tests (`src/**/*.test.ts`); `npx vitest run src/lib/about.test.ts` for one file
+- `npm run test:e2e` — Playwright (Chromium) + axe in `e2e/`; builds and starts the app itself, so it needs `.env.local` (homepage prerenders Supabase data). First run: `npx playwright install chromium`
 
 ## Architecture
 
@@ -39,4 +40,4 @@ Three Supabase clients in `src/lib/supabase/`, chosen by what the code depends o
 - `server.ts` — reads `cookies()` for per-user data; callers must be uncached and inside `<Suspense>`.
 - `client.ts` — browser client for Client Components.
 
-`middleware.ts` (`updateSession`) is not wired into a `src/proxy.ts` yet — it redirects every signed-out request to `/auth/login`, so public routes must be allowed first. Supabase query errors are thrown, so a missing table fails `next build` during prerender. Hero slides (`src/lib/hero-slides.ts`) are still static in code. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.
+`middleware.ts` (`updateSession`) is not wired into a `src/proxy.ts` yet — it redirects every signed-out request to `/auth/login`, so public routes must be allowed first. Supabase query errors are thrown, so a missing table fails `next build` during prerender. Hero slides (`src/lib/hero-slides.ts`) are still static in code. The `/about` page (spec `docs/002-about-page.spec.md`) is deliberately database-free: content is in `src/content/about.ts`, validated by the zod `aboutContentSchema` in `src/lib/about.ts` through `npm test`. Hero images are remote Unsplash URLs; `images.remotePatterns` in `next.config.ts` pins the exact `search` query, so it must change in step with the `unsplash()` helper.

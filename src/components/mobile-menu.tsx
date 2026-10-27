@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
+import type { NavItem } from "./nav-links";
 
-export function MobileMenu({ items }: { items: { label: string; href: string }[] }) {
+export function MobileMenu({ items }: { items: NavItem[] }) {
+  const pathname = usePathname();
   const ref = useRef<HTMLDetailsElement>(null);
   const close = () => ref.current?.removeAttribute("open");
 
@@ -22,7 +25,8 @@ export function MobileMenu({ items }: { items: { label: string; href: string }[]
             key={item.label}
             href={item.href}
             onClick={close}
-            className="block rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            aria-current={pathname === item.href ? "page" : undefined}
+            className="block rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 aria-[current=page]:font-semibold aria-[current=page]:text-pea-primary dark:text-zinc-200 dark:hover:bg-zinc-800 dark:aria-[current=page]:text-white"
           >
             {item.label}
           </Link>
